@@ -2378,9 +2378,8 @@ pub enum ColorMode {
     Truecolor,
     /// Emit 256-palette escapes (`\e[38;5;<idx>m`) by converting every theme
     /// Rgb(r,g,b) to the nearest xterm-256 index. Use this when the transport
-    /// (notably some mosh clients) mishandles 24-bit RGB; preview panes in
-    /// aoe already use 256-palette via ansi-to-tui, so palette mode renders
-    /// chrome through the same escape path and survives the same transports.
+    /// (notably some mosh clients) mishandles 24-bit RGB. Preview output is
+    /// downsampled too, so nested terminals use the same escape path.
     Palette,
 }
 

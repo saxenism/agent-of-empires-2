@@ -7,7 +7,7 @@ use ratatui::prelude::*;
 use ratatui::widgets::*;
 
 use crate::session::Instance;
-use crate::tui::styles::Theme;
+use crate::tui::styles::{color_to_palette, Theme};
 
 /// Light value type the renderers consume in place of a raw `&str`: the cached
 /// parse from `PreviewCache::ensure_parsed`, so the cache updates once per
@@ -515,8 +515,22 @@ fn render_scrolled_output(
     style: Style,
 ) {
     let (top, end) = visible_line_range(line_count, visible_height, scroll_offset);
-    let visible: Vec<Line<'static>> = text.lines[top..end].to_vec();
+    let mut visible: Vec<Line<'static>> = text.lines[top..end].to_vec();
+    // The base theme is indexed only in palette mode; match nested pane colors to it.
+    if matches!(style.fg, Some(Color::Indexed(_))) {
+        for line in &mut visible {
+            downsample_style(&mut line.style);
+            for span in &mut line.spans {
+                downsample_style(&mut span.style);
+            }
+        }
+    }
     frame.render_widget(Paragraph::new(Text::from(visible)).style(style), area);
+}
+
+fn downsample_style(style: &mut Style) {
+    style.fg = style.fg.map(color_to_palette);
+    style.bg = style.bg.map(color_to_palette);
 }
 
 /// Render a tmux-style ` [offset/max] ` indicator when the user has scrolled
@@ -907,5 +921,39 @@ mod tests {
             !hint(true),
             "no frame yet for the displayed session paints nothing"
         );
+    }
+
+    #[test]
+    fn palette_mode_downsamples_nested_terminal_colors() {
+        use ratatui::backend::TestBackend;
+        use ratatui::Terminal;
+
+        let text = parse_output_text("\x1b[38;2;255;0;0;48;2;0;0;255mX\x1b[0m");
+        for (base, expected_fg, expected_bg) in [
+            (Color::Indexed(15), Color::Indexed(196), Color::Indexed(21)),
+            (
+                Color::Rgb(240, 240, 240),
+                Color::Rgb(255, 0, 0),
+                Color::Rgb(0, 0, 255),
+            ),
+        ] {
+            let mut terminal = Terminal::new(TestBackend::new(2, 1)).unwrap();
+            terminal
+                .draw(|frame| {
+                    render_scrolled_output(
+                        frame,
+                        frame.area(),
+                        &text,
+                        text.lines.len(),
+                        1,
+                        0,
+                        Style::default().fg(base),
+                    );
+                })
+                .unwrap();
+            let cell = &terminal.backend().buffer()[(0, 0)];
+            assert_eq!(cell.fg, expected_fg);
+            assert_eq!(cell.bg, expected_bg);
+        }
     }
 }

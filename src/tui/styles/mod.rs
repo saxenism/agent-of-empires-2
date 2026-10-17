@@ -9,6 +9,7 @@ mod resolved;
 mod themes;
 
 pub use contrast::has_min_contrast;
+pub(crate) use palette::color_to_palette;
 pub use resolved::{resolve_theme, ResolvedTheme};
 pub use themes::ThemeAppearance;
 pub use themes::{idle_decay_window, Theme};
