@@ -4953,6 +4953,30 @@ async fn a_retry_across_a_daemon_restart_never_reruns_a_failed_create() {
     assert_eq!(effects(), 2);
 }
 
+#[tokio::test]
+#[serial_test::serial]
+async fn explicit_profile_with_invalid_config_cannot_fall_back_on_create() {
+    let _home = crate::session::test_support::isolate_app_dir();
+    crate::session::create_profile("broken").unwrap();
+    let profile_dir = crate::session::get_profile_dir("broken").unwrap();
+    std::fs::write(
+        profile_dir.join("config.toml"),
+        "[sandbox]\nnetwork = [1]\n",
+    )
+    .unwrap();
+    let project = tempfile::tempdir().unwrap();
+    let state = crate::server::test_support::build_test_app_state(Vec::new());
+    let (status, body) = post_create(
+        &state,
+        serde_json::json!({
+            "path": project.path(), "tool": "codex", "profile": "broken", "sandbox": true,
+        }),
+    )
+    .await;
+    assert_eq!(status, axum::http::StatusCode::BAD_REQUEST);
+    assert_eq!(body["error"], "profile_invalid");
+}
+
 /// Validation that reads mutable state must not answer a retry the restart fence owns:
 /// with the first attempt's profile deleted after the restart, the retry is still an
 /// unknown outcome, not a definitive `profile_not_found`, and no hook runs again.

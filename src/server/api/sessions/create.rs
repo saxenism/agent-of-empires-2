@@ -799,6 +799,16 @@ pub async fn create_session(
     {
         return resp;
     }
+    if let Some(profile) = body.profile.as_deref() {
+        if let Err(error) = crate::session::config::profile_config::resolve_config(profile) {
+            tracing::warn!(target: "server.sessions", profile, %error, "Refusing a session with an invalid explicit profile");
+            return api_error(
+                StatusCode::BAD_REQUEST,
+                "profile_invalid",
+                "The selected profile configuration is invalid",
+            );
+        }
+    }
 
     let validation_profile = body.profile.as_deref().unwrap_or(&state.profile);
     if !validate_session_tool_identity(
