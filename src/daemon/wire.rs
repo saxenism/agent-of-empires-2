@@ -133,6 +133,9 @@ pub struct SessionResponse {
     pub tool: String,
     #[serde(default)]
     pub status: String,
+    /// A Codex rollout UUID observed for this exact terminal conversation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub observed_codex_rollout_id: Option<String>,
     #[serde(default)]
     pub dormant: bool,
     #[serde(default)]

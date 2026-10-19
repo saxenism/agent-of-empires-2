@@ -25,6 +25,8 @@ Each row carries `context_resume`, the request-invariant availability of preserv
 
 A daemon older than this field omits it, so treat an absent `context_resume` as unreported rather than `unavailable`.
 
+For a terminal Codex session, `observed_codex_rollout_id` appears only after AoE has recorded an observed, execution-qualified conversation UUID matching the current session ID. It is a file lookup hint for a trusted local recorder, not a complete transcript or a guarantee that the named rollout belongs to the pane. Verify the rollout metadata, store ownership, and path independently before archiving it.
+
 ### Status values
 
 `status` is **PascalCase** everywhere the HTTP API reports it (`GET /api/sessions`, the create response, the `callback_url` payload). The CLI and `[status_hooks]` env vars use the lowercase form, so do not compare the two directly.

@@ -45,6 +45,21 @@ impl SessionResponse {
             group_path: inst.group_path.clone(),
             tool: inst.tool.clone(),
             status: inst.status.wire_str().to_string(),
+            observed_codex_rollout_id: inst
+                .agent_session_binding
+                .as_ref()
+                .filter(|binding| {
+                    inst.tool == "codex"
+                        && binding.provenance == crate::session::ConversationProvenance::Observed
+                        && binding.is_known()
+                        && binding
+                            .execution
+                            .as_ref()
+                            .is_some_and(|source| source.agent == "codex")
+                        && inst.agent_session_id.as_deref() == Some(binding.session_id.as_str())
+                        && uuid::Uuid::parse_str(&binding.session_id).is_ok()
+                })
+                .map(|binding| binding.session_id.clone()),
             dormant: inst.is_shown_dormant(),
             yolo_mode: inst.yolo_mode,
             created_at: inst.created_at.to_rfc3339(),

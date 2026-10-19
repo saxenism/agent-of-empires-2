@@ -780,6 +780,41 @@ fn qualified_parent_binding() -> crate::session::ConversationBinding {
     }
 }
 
+#[test]
+fn codex_rollout_hint_requires_an_observed_current_binding() {
+    let sid = "11111111-1111-4111-8111-111111111111";
+    let mut row = Instance::new("Codex lane", "/tmp/codex-lane");
+    row.tool = "codex".into();
+    row.agent_session_id = Some(sid.into());
+    let mut binding = qualified_parent_binding();
+    binding.session_id = sid.into();
+    binding.execution.as_mut().unwrap().agent = "codex".into();
+    row.agent_session_binding = Some(binding.clone());
+    assert_eq!(
+        SessionResponse::from_instance(&row, false)
+            .observed_codex_rollout_id
+            .as_deref(),
+        Some(sid)
+    );
+
+    row.agent_session_id = Some("22222222-2222-4222-8222-222222222222".into());
+    assert!(SessionResponse::from_instance(&row, false)
+        .observed_codex_rollout_id
+        .is_none());
+    row.agent_session_id = Some(sid.into());
+    binding.provenance = crate::session::ConversationProvenance::Preallocated;
+    row.agent_session_binding = Some(binding.clone());
+    assert!(SessionResponse::from_instance(&row, false)
+        .observed_codex_rollout_id
+        .is_none());
+    binding.provenance = crate::session::ConversationProvenance::Observed;
+    binding.execution = None;
+    row.agent_session_binding = Some(binding);
+    assert!(SessionResponse::from_instance(&row, false)
+        .observed_codex_rollout_id
+        .is_none());
+}
+
 /// A parent binding that records the id without qualifying it: no execution
 /// stands behind it, so `is_known()` is false whatever the provenance claims.
 fn unqualified_parent_binding(

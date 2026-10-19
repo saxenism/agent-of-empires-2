@@ -574,6 +574,7 @@ mod workspace_ordering_tests {
             group_path: String::new(),
             tool: "claude".to_string(),
             status: "Idle".to_string(),
+            observed_codex_rollout_id: None,
             dormant: false,
             yolo_mode: false,
             created_at: "2025-01-01T00:00:00Z".to_string(),
