@@ -385,6 +385,34 @@ mod tests {
     }
 
     #[test]
+    fn repo_cannot_relax_host_sandbox_network_or_terminal_policy() {
+        let mut host = Config::default();
+        host.sandbox.network = Some("none".into());
+        host.sandbox.default_terminal_mode = super::super::DefaultTerminalMode::Container;
+        let repo: RepoConfig = toml::from_str(
+            "[sandbox]\nnetwork = \"bridge\"\ndefault_terminal_mode = \"host\"\nport_mappings = [\"0.0.0.0:8080:8080\"]\nauto_cleanup = false\n",
+        )
+        .unwrap();
+        let merged = merge_repo_config(host, &repo);
+        assert_eq!(merged.sandbox.network.as_deref(), Some("none"));
+        assert_eq!(
+            merged.sandbox.default_terminal_mode,
+            super::super::DefaultTerminalMode::Container
+        );
+        assert!(merged.sandbox.port_mappings.is_empty());
+        assert!(merged.sandbox.auto_cleanup);
+        assert_eq!(
+            rejected(&repo),
+            vec![
+                "sandbox.auto_cleanup",
+                "sandbox.default_terminal_mode",
+                "sandbox.network",
+                "sandbox.port_mappings"
+            ]
+        );
+    }
+
+    #[test]
     fn session_section_is_default_deny_at_merge() {
         let repo = repo(serde_json::json!({
             "session": {

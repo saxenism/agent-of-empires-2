@@ -2730,7 +2730,8 @@ pub struct SandboxConfig {
     #[setting(
         label = "Auto Cleanup",
         widget = "toggle",
-        web = "elevation:sandbox config affects host isolation"
+        web = "elevation:sandbox config affects host isolation",
+        repo = "deny"
     )]
     pub auto_cleanup: bool,
 
@@ -2766,6 +2767,7 @@ pub struct SandboxConfig {
         widget = "list",
         validate = "port_mapping_list",
         web = "elevation:sandbox config affects host isolation",
+        repo = "deny",
         advanced
     )]
     pub port_mappings: Vec<String>,
@@ -2793,7 +2795,8 @@ pub struct SandboxConfig {
         label = "Default Terminal Mode",
         widget = "select",
         options = "host:Host,container:Container",
-        web = "elevation:sandbox config affects host isolation"
+        web = "elevation:sandbox config affects host isolation",
+        repo = "deny"
     )]
     pub default_terminal_mode: DefaultTerminalMode,
 
