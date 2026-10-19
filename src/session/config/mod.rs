@@ -2782,6 +2782,7 @@ pub struct SandboxConfig {
         widget = "optional_text",
         validate = "network",
         web = "elevation:sandbox config affects host isolation",
+        repo = "deny",
         advanced
     )]
     pub network: Option<String>,

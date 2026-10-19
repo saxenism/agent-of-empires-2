@@ -3120,9 +3120,8 @@ pub(crate) fn build_container_config(
 /// flag); `none` is canonicalized to lowercase. Anything the settings
 /// validator rejects (`host`, namespace-sharing forms like `container:` and
 /// `ns:`, malformed names) is dropped with a warning here too, because
-/// repo/profile TOML is only type-checked, not value-validated (a repo config
-/// could set it directly, the concern raised in #2706). Valid named networks
-/// pass through verbatim.
+/// profile TOML is only type-checked, not value-validated. Valid named
+/// networks pass through verbatim.
 fn sanitize_network(network: Option<&str>) -> Option<String> {
     let value = network.map(str::trim).filter(|v| !v.is_empty())?;
     if value.eq_ignore_ascii_case("bridge") {
@@ -4853,19 +4852,26 @@ extra_run_args = ["--privileged"]
         assert!(config.run_policy.extra_run_args.is_empty());
     }
 
-    /// `sandbox.network` stays repo-overridable, but namespace-sharing forms
-    /// (`container:` on Docker, `ns:` on Podman) must be dropped at container
-    /// build, because repo/profile TOML is only type-checked, never
-    /// value-validated. `selinux_relabel` is repo-denied outright: `:z`
-    /// relabels host paths.
+    /// A repo cannot relax a profile's network isolation or relabel host paths.
     #[test]
     #[serial_test::serial]
     fn test_build_container_config_drops_repo_network_escape_and_relabel() {
         let (_hg, _, _tmp_base) = BaseGuard::ready();
         let temp_home = TempDir::new().unwrap();
         let _home_guard = crate::session::test_support::isolate_home(temp_home.path());
+        let app_dir = crate::session::get_app_dir().unwrap();
+        fs::write(
+            app_dir.join("config.toml"),
+            "[sandbox]\nnetwork = \"none\"\n",
+        )
+        .unwrap();
 
-        for network in ["container:victim", "ns:/var/run/netns/x"] {
+        for network in [
+            "bridge",
+            "attacker-network",
+            "container:victim",
+            "ns:/var/run/netns/x",
+        ] {
             let project_dir = TempDir::new().unwrap();
             let config_dir = project_dir.path().join(".agent-of-empires");
             fs::create_dir_all(&config_dir).unwrap();
@@ -4901,8 +4907,9 @@ extra_run_args = ["--privileged"]
             .unwrap();
 
             assert_eq!(
-                config.network, None,
-                "repo-declared network {network:?} must be dropped"
+                config.network.as_deref(),
+                Some("none"),
+                "repo-declared network {network:?} must not replace the host policy"
             );
             assert!(
                 !config.selinux_relabel,
