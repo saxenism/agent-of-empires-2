@@ -139,6 +139,9 @@ pub struct RunPolicy {
 
 #[derive(Default)]
 pub struct ContainerConfig {
+    /// Full AoE session ID, retained as a runtime label so trusted local
+    /// orchestrators can bind an inspect result to the untruncated session.
+    pub session_id: Option<String>,
     pub working_dir: String,
     pub volumes: Vec<VolumeMount>,
     pub anonymous_volumes: Vec<String>,

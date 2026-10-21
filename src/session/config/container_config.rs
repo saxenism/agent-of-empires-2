@@ -3091,6 +3091,7 @@ pub(crate) fn build_container_config(
     }
 
     Ok(ContainerConfig {
+        session_id: Some(instance_id.to_string()),
         working_dir: workspace_path,
         volumes: deduped,
         anonymous_volumes,

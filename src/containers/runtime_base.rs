@@ -305,6 +305,12 @@ impl RuntimeBase {
                     config.mount_fingerprint()
                 ),
             );
+            if let Some(session_id) = &config.session_id {
+                push(
+                    "--label",
+                    format!("com.agent-of-empires.session-id={session_id}"),
+                );
+            }
             if !config.shared_credential_mounts.is_empty() {
                 push(
                     "--label",
@@ -1072,6 +1078,18 @@ mod tests {
             assert_eq!(labels[0], "com.agent-of-empires.sandbox-store-generation=2");
             assert!(labels[1].starts_with("com.agent-of-empires.mount-fingerprint="));
             assert_eq!(labels.len(), 2);
+            let session_args = create_args(
+                base,
+                ContainerConfig {
+                    session_id: Some("abc123def456".to_string()),
+                    ..Default::default()
+                },
+            );
+            let session_labels = values_of(&session_args, "--label");
+            assert_eq!(
+                session_labels[2],
+                "com.agent-of-empires.session-id=abc123def456"
+            );
             let shared_args = create_args(base, shared());
             let labels = values_of(&shared_args, "--label");
             assert_eq!(
